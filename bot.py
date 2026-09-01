@@ -379,8 +379,39 @@ async def ranking(interaction: discord.Interaction):
 
     lines = []
     for i, r in enumerate(rows, 1):
-        user = bot.get_user(r["user_id"])
-        name = user.display_name if user else f"유저 {r['user_id']}"
+        user_id = int(r["user_id"])
+        name = None
+
+        # /강화랭킹을 실행한 서버에서 해당 유저의 '서버 닉네임'을 우선 표시합니다.
+        if interaction.guild is not None:
+            member = interaction.guild.get_member(user_id)
+
+            # 멤버 캐시에 없으면 Discord API에서 직접 조회합니다.
+            if member is None:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    member = None
+
+            if member is not None:
+                name = member.display_name
+
+        # 서버 멤버를 찾지 못한 경우 Discord 계정 표시명으로 한 번 더 시도합니다.
+        if name is None:
+            user = bot.get_user(user_id)
+            if user is None:
+                try:
+                    user = await bot.fetch_user(user_id)
+                except (discord.NotFound, discord.HTTPException):
+                    user = None
+
+            if user is not None:
+                name = user.display_name
+
+        # 서버를 나간 유저 등 아무 정보도 찾지 못할 때만 ID를 표시합니다.
+        if name is None:
+            name = f"유저 {user_id}"
+
         lines.append(
             f"**{i}. {name}** — 공 {r['atk']} / 주 {r['main_stat']} / 마 {r['matk']} / 마방 {r['mdef']}"
         )
