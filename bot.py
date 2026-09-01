@@ -380,13 +380,40 @@ async def ranking(interaction: discord.Interaction):
     lines = []
     for i, r in enumerate(rows, 1):
         user_id = int(r["user_id"])
+        name = None
 
-        # Discord 멘션 형식으로 출력하면 클라이언트가 해당 서버의 닉네임으로 표시합니다.
-        # 별도 캐시/API 조회가 필요 없어 Railway에서도 가장 안정적으로 동작합니다.
-        member_display = f"<@{user_id}>"
+        # /강화랭킹을 실행한 서버에서 해당 유저의 '서버 닉네임'을 우선 표시합니다.
+        if interaction.guild is not None:
+            member = interaction.guild.get_member(user_id)
+
+            # 멤버 캐시에 없으면 Discord API에서 직접 조회합니다.
+            if member is None:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    member = None
+
+            if member is not None:
+                name = member.display_name
+
+        # 서버 멤버를 찾지 못한 경우 Discord 계정 표시명으로 한 번 더 시도합니다.
+        if name is None:
+            user = bot.get_user(user_id)
+            if user is None:
+                try:
+                    user = await bot.fetch_user(user_id)
+                except (discord.NotFound, discord.HTTPException):
+                    user = None
+
+            if user is not None:
+                name = user.display_name
+
+        # 서버를 나간 유저 등 아무 정보도 찾지 못할 때만 ID를 표시합니다.
+        if name is None:
+            name = f"유저 {user_id}"
 
         lines.append(
-            f"**{i}. {member_display}** — 공 {r['atk']} / 주 {r['main_stat']} / 마 {r['matk']} / 마방 {r['mdef']}"
+            f"**{i}. {name}** — 공 {r['atk']} / 주 {r['main_stat']} / 마 {r['matk']} / 마방 {r['mdef']}"
         )
 
     embed = discord.Embed(title="🏆 푸른 복대 강화 랭킹", description="\n".join(lines), color=0xF1C40F)
