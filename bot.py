@@ -369,7 +369,7 @@ async def ranking(interaction: discord.Interaction):
         rows = conn.execute("""
             SELECT user_id, main_stat, atk, matk, mdef, slots
             FROM items
-            ORDER BY atk DESC, main_stat DESC, matk DESC
+            ORDER BY (atk * 5 + main_stat) DESC, atk DESC, main_stat DESC
             LIMIT 10
         """).fetchall()
 
@@ -412,8 +412,12 @@ async def ranking(interaction: discord.Interaction):
         if name is None:
             name = f"유저 {user_id}"
 
+        # 환산 등급 = 공격력 + (주스텟 × 0.2)
+        grade = r["atk"] + (r["main_stat"] * 0.2)
+        grade_text = f"{grade:.1f}".rstrip("0").rstrip(".")
+
         lines.append(
-            f"**{i}. {name}** — 공 {r['atk']} / 주 {r['main_stat']} / 마 {r['matk']} / 마방 {r['mdef']}"
+            f"**{i}. {name}** — **{grade_text}급** (공 {r['atk']} / 주스텟 {r['main_stat']})"
         )
 
     embed = discord.Embed(title="🏆 푸른 복대 강화 랭킹", description="\n".join(lines), color=0xF1C40F)
