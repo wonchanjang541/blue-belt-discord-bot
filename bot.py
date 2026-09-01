@@ -30,17 +30,23 @@ DELTA_MAX = 5
 CLAMP_STATS_AT_ZERO = True
 
 def get_font(size: int):
+    # Railway/Linux에서는 Dockerfile로 fonts-noto-cjk를 설치합니다.
+    # 한글 지원 폰트를 최우선으로 찾고, Windows 로컬 실행도 지원합니다.
     candidates = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         r"C:\Windows\Fonts\malgun.ttf",
         r"C:\Windows\Fonts\malgunbd.ttf",
-        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-        "/usr/share/fonts/truetype/unfonts-core/UnDotum.ttf",
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     ]
     for p in candidates:
         if Path(p).exists():
             return ImageFont.truetype(p, size=size)
-    return ImageFont.load_default()
+
+    raise RuntimeError(
+        "한글 폰트를 찾을 수 없습니다. Railway에서는 Dockerfile을 함께 배포해야 합니다."
+    )
 
 FONT_16 = get_font(16)
 FONT_17 = get_font(17)
